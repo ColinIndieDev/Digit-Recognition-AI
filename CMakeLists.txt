@@ -7,4 +7,5 @@ add_executable(AI main.cpp
         NeuralNetwork.cpp
         NeuralNetwork.h
         mnist_loader.cpp
-        mnist_loader.h)
+        mnist_loader.h
+        Timer.h)

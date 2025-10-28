@@ -1,16 +1,18 @@
 #include "NeuralNetwork.h"
+#include <cmath>
 #include <iostream>
 #include <ostream>
 #include <fstream>
 #include <filesystem>
 #include <random>
+#include "Timer.h"
 
 NeuralNetwork::NeuralNetwork(const int inputSize, const int hiddenSize, const int outputSize) {
     std::mt19937 gen(std::random_device{}());
-    std::uniform_real_distribution dist(-1.0, 1.0);
+    std::uniform_real_distribution dist(-1.0f, 1.0f);
 
-    W1.resize(hiddenSize, std::vector<double>(inputSize));
-    W2.resize(outputSize, std::vector<double>(hiddenSize));
+    W1.resize(hiddenSize, std::vector<float>(inputSize));
+    W2.resize(outputSize, std::vector<float>(hiddenSize));
     b1.resize(hiddenSize);
     b2.resize(outputSize);
 
@@ -37,22 +39,22 @@ void NeuralNetwork::SaveNetwork(const std::string& filePath) const {
     file << currentEpoch << "\n";
     file << "W1\n";
     for (const auto& row : W1) {
-        for (const double w : row)
+        for (const float w : row)
             file << w << " ";
         file << "\n";
     }
     file << "b1\n";
-    for (const double b : b1)
+    for (const float b : b1)
         file << b << " ";
     file << "\n";
     file << "W2\n";
     for (const auto& row : W2) {
-        for (const double w : row)
+        for (const float w : row)
             file << w << " ";
         file << "\n";
     }
     file << "b2\n";
-    for (const double b : b2)
+    for (const float b : b2)
         file << b << " ";
     file << "\n";
 
@@ -79,20 +81,20 @@ void NeuralNetwork::LoadNetwork(const std::string& filePath) {
         }
         if (tag == "W1") {
             for (auto& row : W1)
-                for (double& w : row)
+                for (float& w : row)
                     file >> w;
         }
         else if (tag == "b1") {
-            for (double& b : b1)
+            for (float& b : b1)
                 file >> b;
         }
         else if (tag == "W2") {
             for (auto& row : W2)
-                for (double& w : row)
+                for (float& w : row)
                     file >> w;
         }
         else if (tag == "b2") {
-            for (double& b : b2)
+            for (float& b : b2)
                 file >> b;
         }
     }
@@ -102,26 +104,26 @@ void NeuralNetwork::LoadNetwork(const std::string& filePath) {
     std::cout << "[INFO] Loaded neural network currently has " << currentEpoch << " epochs!" << std::endl;
 }
 
-double NeuralNetwork::sigmoid(const double x) {
-    return 1.0 / (1.0 + exp(-x));
+float NeuralNetwork::sigmoid(const float x) {
+    return 1.0f / (1.0f + std::exp(-x));
 }
-double NeuralNetwork::sigmoidDerivative(const double x) {
-    return x * (1.0 - x);
+float NeuralNetwork::sigmoidDerivative(const float x) {
+    return x * (1.0f - x);
 }
 
-std::vector<double> NeuralNetwork::FeedForward(const std::vector<double>& input) const {
-    std::vector<double> hidden(b1.size());
-    std::vector<double> output(b2.size());
+std::vector<float> NeuralNetwork::FeedForward(const std::vector<float>& input) const {
+    std::vector<float> hidden(b1.size());
+    std::vector<float> output(b2.size());
 
     for (int i = 0; i < hidden.size(); i++) {
-        double sum = b1[i];
+        float sum = b1[i];
         for (int j = 0; j < input.size(); j++) {
             sum += W1[i][j] * input[j];
         }
         hidden[i] = sigmoid(sum);
     }
     for (int i = 0; i < output.size(); i++) {
-        double sum = b2[i];
+        float sum = b2[i];
         for (int j = 0; j < hidden.size(); j++) {
             sum += W2[i][j] * hidden[j];
         }
@@ -130,48 +132,49 @@ std::vector<double> NeuralNetwork::FeedForward(const std::vector<double>& input)
     return output;
 }
 
-void NeuralNetwork::TrainNetwork(const std::vector<std::vector<double>>& X, const std::vector<std::vector<double>>& Y, const double learningRate, const int epochs) {
+void NeuralNetwork::TrainNetwork(const std::vector<std::vector<float>>& X, const std::vector<std::vector<float>>& Y, const float learningRate, const int epochs) {
     for (int epoch = 0; epoch < epochs; epoch++) {
-        double totalLoss = 0.0;
+        float totalLoss = 0.0;
 
         for (int n = 0; n < X.size(); n++) {
-            const std::vector<double>& input(X[n]);
-            const std::vector<double>& target(Y[n]);
+            const std::vector<float>& input(X[n]);
+            const std::vector<float>& target(Y[n]);
 
-            std::vector<double> hidden(b1.size());
-            std::vector<double> output(b2.size());
+            std::vector<float> hidden(b1.size());
+            std::vector<float> output(b2.size());
+
             for (int i = 0; i < hidden.size(); i++) {
-                double sum = b1[i];
+                float sum = b1[i];
                 for (int j = 0; j < input.size(); j++) {
                     sum += W1[i][j] * input[j];
                 }
                 hidden[i] = sigmoid(sum);
             }
             for (int i = 0; i < output.size(); i++) {
-                double sum = b2[i];
+                float sum = b2[i];
                 for (int j = 0; j < hidden.size(); j++) {
                     sum += W2[i][j] * hidden[j];
                 }
                 output[i] = sigmoid(sum);
             }
 
-            std::vector<double> outputError(output.size());
+            std::vector<float> outputError(output.size());
             for (int i = 0; i < output.size(); i++) {
                 outputError[i] = target[i] - output[i];
-                totalLoss += 0.5 * std::pow(outputError[i], 2);
+                totalLoss += 0.5f * std::pow(outputError[i], 2.0f);
             }
-            std::vector<double> outputDelta(output.size());
+            std::vector<float> outputDelta(output.size());
             for (int i = 0; i < output.size(); i++) {
                 outputDelta[i] = outputError[i] * sigmoidDerivative(output[i]);
             }
 
-            std::vector hiddenError(hidden.size(), 0.0);
+            std::vector hiddenError(hidden.size(), 0.0f);
             for (int i = 0; i < hidden.size(); i++) {
                 for (int j = 0; j < output.size(); j++) {
                     hiddenError[i] += W2[j][i] * outputDelta[j];
                 }
             }
-            std::vector<double> hiddenDelta(hidden.size());
+            std::vector<float> hiddenDelta(hidden.size());
             for (int i = 0; i < hidden.size(); i++) {
                 hiddenDelta[i] = hiddenError[i] * sigmoidDerivative(hidden[i]);
             }
@@ -190,7 +193,7 @@ void NeuralNetwork::TrainNetwork(const std::vector<std::vector<double>>& X, cons
                 b1[i] += learningRate * hiddenDelta[i];
             }
         }
-        totalLoss /= static_cast<double>(X.size());
+        totalLoss /= static_cast<float>(X.size());
         currentEpoch++;
         std::cout << "Epoch: " << epoch + 1 << " / " << epochs << " | Loss: " << totalLoss << std::endl;
 

@@ -2,26 +2,7 @@
 #include "NeuralNetwork.h"
 #include "mnist_loader.h"
 #include <chrono>
-#include <utility>
-
-struct Timer {
-    std::chrono::time_point<std::chrono::steady_clock> start, end;
-    std::chrono::duration<float> duration{};
-    std::string text;
-
-    explicit Timer(std::string text) : text(std::move(text)) {
-        start = std::chrono::steady_clock::now();
-    }
-
-    ~Timer() {
-        end = std::chrono::steady_clock::now();
-        duration = end - start;
-        const float ms = duration.count() * 1000.0f;
-        std::cout << "------------------------------------------------------\n";
-        std::cout << text.c_str() << " " << ms << " ms!\n";
-        std::cout << "------------------------------------------------------\n";
-    }
-};
+#include "Timer.h"
 
 int main() {
     const auto trainImages = mnist_loader::load_images("../data/train-images.idx3-ubyte");
@@ -29,9 +10,9 @@ int main() {
     const auto testImages = mnist_loader::load_images("../data/t10k-images.idx3-ubyte");
     const auto testLabels = mnist_loader::load_labels("../data/t10k-labels.idx1-ubyte");
 
-    std::vector<std::vector<double>> Y;
+    std::vector<std::vector<float>> Y;
     for (const int label : trainLabels) {
-        std::vector oneHot(10, 0.0);
+        std::vector oneHot(10, 0.0f);
         oneHot[label] = 1.0;
         Y.push_back(oneHot);
     }
@@ -43,7 +24,7 @@ int main() {
     }
     {
         auto timer = Timer("Training network took");
-        network.TrainNetwork(trainImages, Y, 0.1, 30);
+        network.TrainNetwork(trainImages, Y, 0.1, 1);
     }
     {
         auto timer = Timer("Testing network took");

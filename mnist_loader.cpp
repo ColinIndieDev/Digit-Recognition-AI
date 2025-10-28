@@ -12,7 +12,7 @@ int mnist_loader::reverse_int(const int i) {
     return (static_cast<int>(c1) << 24) + (static_cast<int>(c2) << 16) + (static_cast<int>(c3) << 8) + c4;
 }
 
-std::vector<std::vector<double>> mnist_loader::load_images(const std::string &filename) {
+std::vector<std::vector<float>> mnist_loader::load_images(const std::string &filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file) throw std::runtime_error("Cannot open file: " + filename);
 
@@ -27,12 +27,12 @@ std::vector<std::vector<double>> mnist_loader::load_images(const std::string &fi
     n_rows = reverse_int(n_rows);
     n_cols = reverse_int(n_cols);
 
-    std::vector images(number_of_images, std::vector<double>(n_rows * n_cols));
+    std::vector images(number_of_images, std::vector<float>(n_rows * n_cols));
     for (int i = 0; i < number_of_images; ++i) {
         for (int j = 0; j < n_rows * n_cols; ++j) {
             unsigned char pixel = 0;
             file.read(reinterpret_cast<char*>(&pixel), sizeof(pixel));
-            images[i][j] = pixel / 255.0;
+            images[i][j] = static_cast<float>(pixel) / 255.0f;
         }
     }
     return images;
