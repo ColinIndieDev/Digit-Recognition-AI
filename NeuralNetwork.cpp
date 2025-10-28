@@ -1,6 +1,8 @@
 #include "NeuralNetwork.h"
 #include <iostream>
 #include <ostream>
+#include <fstream>
+#include <filesystem>
 #include <random>
 
 NeuralNetwork::NeuralNetwork(const int inputSize, const int hiddenSize, const int outputSize) {
@@ -22,6 +24,82 @@ NeuralNetwork::NeuralNetwork(const int inputSize, const int hiddenSize, const in
             val = dist(gen);
         }
     }
+}
+
+void NeuralNetwork::SaveNetwork(const std::string& filePath) const {
+    std::ofstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "[ERROR] Cannot open path: " << filePath << std::endl;
+        return;
+    }
+
+    file << "Epoch(s)\n";
+    file << currentEpoch << "\n";
+    file << "W1\n";
+    for (const auto& row : W1) {
+        for (const double w : row)
+            file << w << " ";
+        file << "\n";
+    }
+    file << "b1\n";
+    for (const double b : b1)
+        file << b << " ";
+    file << "\n";
+    file << "W2\n";
+    for (const auto& row : W2) {
+        for (const double w : row)
+            file << w << " ";
+        file << "\n";
+    }
+    file << "b2\n";
+    for (const double b : b2)
+        file << b << " ";
+    file << "\n";
+
+    file.close();
+    std::cout << "[INFO] Neural network saved in: " << filePath << std::endl;
+}
+
+void NeuralNetwork::LoadNetwork(const std::string& filePath) {
+    if (!std::filesystem::exists(filePath)) {
+        std::cerr << "[ERROR] Could not find file: " << filePath << std::endl;
+        return;
+    }
+
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        std::cerr << "[ERROR] Cannot open path: " << filePath << std::endl;
+        exit(-1);
+    }
+
+    std::string tag;
+    while (file >> tag) {
+        if (tag == "Epoch(s)") {
+            file >> currentEpoch;
+        }
+        if (tag == "W1") {
+            for (auto& row : W1)
+                for (double& w : row)
+                    file >> w;
+        }
+        else if (tag == "b1") {
+            for (double& b : b1)
+                file >> b;
+        }
+        else if (tag == "W2") {
+            for (auto& row : W2)
+                for (double& w : row)
+                    file >> w;
+        }
+        else if (tag == "b2") {
+            for (double& b : b2)
+                file >> b;
+        }
+    }
+
+    file.close();
+    std::cout << "[INFO] Neural network loaded from: " << filePath << std::endl;
+    std::cout << "[INFO] Loaded neural network currently has " << currentEpoch << " epochs!" << std::endl;
 }
 
 double NeuralNetwork::sigmoid(const double x) {
@@ -112,7 +190,10 @@ void NeuralNetwork::TrainNetwork(const std::vector<std::vector<double>>& X, cons
                 b1[i] += learningRate * hiddenDelta[i];
             }
         }
-        totalLoss /= X.size();
+        totalLoss /= static_cast<double>(X.size());
+        currentEpoch++;
         std::cout << "Epoch: " << epoch + 1 << " / " << epochs << " | Loss: " << totalLoss << std::endl;
+
+        SaveNetwork("neural_network_save");
     }
 }

@@ -2,13 +2,14 @@
 #include "NeuralNetwork.h"
 #include "mnist_loader.h"
 #include <chrono>
+#include <utility>
 
 struct Timer {
     std::chrono::time_point<std::chrono::steady_clock> start, end;
     std::chrono::duration<float> duration{};
     std::string text;
 
-    explicit Timer(const std::string& text) : text(text) {
+    explicit Timer(std::string text) : text(std::move(text)) {
         start = std::chrono::steady_clock::now();
     }
 
@@ -37,19 +38,23 @@ int main() {
 
     NeuralNetwork network(784, 64, 10);
     {
+        auto timer = Timer("Loading network from files took");
+        network.LoadNetwork("neural_network_save");
+    }
+    {
         auto timer = Timer("Training network took");
-        network.TrainNetwork(trainImages, Y, 0.1, 20);
+        network.TrainNetwork(trainImages, Y, 0.1, 30);
     }
     {
         auto timer = Timer("Testing network took");
 
         int correct = 0;
-        const int total = testImages.size();
+        const int total = static_cast<int>(testImages.size());
 
         for (int i = 0; i < total; i++) {
             auto output = network.FeedForward(testImages[i]);
 
-            const int predicted = std::distance(output.begin(), std::max_element(output.begin(), output.end()));
+            const int predicted = static_cast<int>(std::distance(output.begin(), std::max_element(output.begin(), output.end())));
 
             if (const int actual = testLabels[i];
                 predicted == actual) correct++;
