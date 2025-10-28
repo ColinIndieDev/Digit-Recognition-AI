@@ -24,7 +24,7 @@ int main() {
     }
     {
         auto timer = Timer("Training network took");
-        network.TrainNetwork(trainImages, Y, 0.1, 1);
+        network.TrainNetwork(trainImages, Y, 0.1, 50);
     }
     {
         auto timer = Timer("Testing network took");
