@@ -41,14 +41,14 @@ but instead is not used for comparison but as a part of the calculation. Also co
 does not have a big impact on the result if the weights and biases change a little. The sigmoid function just makes sure that
 the result should be between 0 and 1. And that is roughly what a sigmoid neuron is.
 
-The neural network just has multiple neurons which are connected to the next layer of neurons.The input neurons just gets the data in that case the pixel color value, the hidden
-ones do some calculations depending on the biases (b) and weights (w1, w2, wn, ... ) and the output neurons well they contain 
+The neural network just has multiple neurons which are connected to the next layer of neurons. The input neurons just get the data in that case the pixel color value while the hidden and output
+ones do some calculations depending on the biases (b) and weights (w1, w2, wn, ... ) and the output neurons well they after contain 
 the final value in that case the probability what number the image shows.
 
 ### Backpropagation
 But before we can test our neural network, we have to train it before to increase its accuracy. Here I used supervised machine learning where the train images are labeled with the correct digit the picture shows.
 This process or a part of it of the training is "backpropagation" when we start from the output to the input.
-The first step is to calculate the errors for each output neuron:
+The first step is to calculate the errors for each output neuron if for example the image shows a "5" but the AI thinks it is a "8" with 0.8 probablity while 5 only has 0.3. We have to change our weights and biases since these are the only things we can change and adjust so that for 5 the result is 1.0 but for 8 0.0:
 
 `std::vector<double> outputError(output.size());`\
 `for (int i = 0; i < output.size(); i++) {`\
@@ -57,7 +57,7 @@ The first step is to calculate the errors for each output neuron:
 
 `output` is the result the AI gets and `target` the expected result the AI should get as well. As you can see we just subtract both of them to get the errors from the output.
 
-The next step is to calculate the delta of output which means the factor we want to change the weights and biase from the output neuron. We can achieve this like this:
+The next step is to calculate the delta of output which means the factor we want to change the weights and biases from the output neuron. We can achieve this like this:
 
 `std::vector<double> outputDelta(output.size());`\
 `for (int i = 0; i < output.size(); i++) {`\
@@ -65,6 +65,7 @@ The next step is to calculate the delta of output which means the factor we want
 `}`
 
 Here we just multiply the error with the sigmoid derivative which is:
+
 `o'(o(x)) = o(x) * (1.0 - o(x))`
 
 Now we do the similar process for the hidden neurons. We just have different inputs for the functions in contrast to the output. But they both do the same thing: changing the weights and biases for each neuron.
@@ -83,14 +84,14 @@ Note that we only calculated the change which must happen but we now need to app
 `    b1[i] += learningRate * hiddenDelta[i];`\
 `}`
 
-We firstly mulitply our calculated delta with the result of the neuron and the learningRate where the rate opf 0.1 is recommended. Then we add this to the weight.
-For the baise we only multiply this with the delta and learning rate and add the result to the bias.
+We firstly multiply our calculated delta with the result of the neuron and the `learningRate` where the rate of 0.1 is recommended. Then we add this to the weight.
+For the biases we only multiply each with the delta and learning rate and add the result to the bias.
 
-This way, we roughly can train our network of course there is a bit more behind the scenes but backpropagation is the most important thing inside the train function and also one of the difficult things when creating a network.
+This way, we roughly can train our network of course there is a bit more behind the scenes but backpropagation is the most important thing inside the training function and also one of the difficult things when creating a network like that.
 
 ### Forwardpropagation
 
-Now we have successfully trained our AI. This can be done by the provided function TrainNetwork(...). Here we use as parameters the train image and the corresponding labels from the MNIST database, how many epochs we want the neural network to train and the learn rate:
+Now we have successfully trained our AI. This can be done by the provided function TrainNetwork(...). Here we use as parameters the train images and the corresponding labels from the MNIST database, how many epochs we want the neural network to train and the learn rate:
 
 `NeuralNetwork network(784, 64, 10);`\
 `network.TrainNetwork(trainImages, Y, 0.1, 50);`
@@ -98,7 +99,7 @@ Now we have successfully trained our AI. This can be done by the provided functi
 Here we create an instance of our neural network before and set the amount of neurons in the input, hidden and output layer. When training we refer to the train images `trainImages` and train labels `Y`. Additionally the learn rate is set to `0.1` and we want the training to go until `50` epochs.
 
 That is enough for now because we want to test our AI and how good it is. We measure its performance by "feeding" our neural network with the test data (10.000 images). Here we need "forwardpropagation".
-Forwardpropagation is used to get the results from our 10 output neurons. First we already converted our 28x28 grayscale image into a vector of the size 784 containing the grayscale value between 0 and 1. Then we calculate the result of our hidden neurons like this:
+Forwardpropagation is used to get the results from our 10 output neurons. First we already converted our 28x28 grayscale image into 28 different vectors each of the size of 28 containing the grayscale value between 0 and 1. Then we calculate the result of our hidden neurons like this:
 
 `for (int i = 0; i < hidden.size(); i++) {`\
 `   float sum = b1[i];`\
@@ -129,8 +130,8 @@ And all of this I mentioned is forwardpropagation. Compared to backpropagation w
 > image showing a digit
 
 ## Future plans
-This example of an AI is outdated today. These days we have even more efficient AIs. The difference are the functions being used instead of sigmoid like ReLu, tanh etc. Also the structure is a bit different when you compare this AI with other ones nowadays or LLMs like ChatGPT. But this project is a great start when trying to understand and even create neural networks. We can optimize this here I used "batching" so that we don't iterate through each train image during backpropagation we instead take only a chunk of images each iteration so the AI calculate the changes delta for the weights and biases for 64 images and after that it takes another chunk and so on until we went through all 60.000 training images. This saves us multiple seconds but we can optimize it even more!
-From here you should be able to make such a primitive AI on your own and upgrade it. If you don't understand or need some help I would recommend this Playlist especially the first 3 videos which also helped me much and made my do this AI on a single day. You can also check out this "book":
+This example of an AI is outdated today. These days we have even more efficient AIs. The difference are the functions being used instead of sigmoid like ReLu, tanh etc. Also the structure is a bit different when you compare this AI with other ones nowadays or LLMs like ChatGPT. But this project is a great start when trying to understand and even create neural networks. We can optimize this here I used "batching" so that we don't iterate through each train image during backpropagation we instead take only a chunk of images each iteration so the AI calculates the changes delta for the weights and biases for 64 images and after that it takes another chunk and so on until we went through all 60.000 training images. This saves us multiple seconds but we can optimize it even more!
+From here you should be able to make such a primitive AI on your own and upgrade it. If you don't understand or need some help I would recommend this playlist on YouTube especially the first 3 videos which also helped me much and made me do this AI on a single day. You can also check out this "book":
 
 ### Sources:
 https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi&index=1 (neural network)
