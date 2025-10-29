@@ -19,6 +19,14 @@ Before that, this is the sigmoid function:
 
 `o(x) = 1 / ( 1 + e^-x)`
 
+You can look up the graph online but the key of the sigmoid function is that:
+
+`lim (x -> -∞) o(x) = 0`\
+`lim (x -> +∞) o(x) = 1`
+
+That basically means that the result is "clamped" between 0 and 1 where x can me ANY number. For high positive values the result gets
+closer to 1 and low negative values to 0!
+
 ### Sigmoid neurons and neural network
 As mentioned before, every AI (at least the ones still using sigmoid functions and old structures)
 is like this or similar, the only thing may differ is the amount of hidden layers where you can use at least 1.
