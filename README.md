@@ -126,7 +126,9 @@ From here you should be able to make such a primitive AI on your own and upgrade
 
 ### Sources:
 https://www.youtube.com/watch?v=aircAruvnKk&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi&index=1 (neural network)
+
 https://www.youtube.com/watch?v=IHZwWFHWa-w&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi&index=2 (deepening)
+
 https://www.youtube.com/watch?v=Ilg3gGewQ5U&list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi&index=3 (backpropagation)
 
 http://neuralnetworksanddeeplearning.com/chap1.html ("book" also about digit recognition AI with sigmoid)
