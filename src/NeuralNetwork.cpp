@@ -5,7 +5,7 @@
 #include <fstream>
 #include <filesystem>
 #include <random>
-#include "Timer.h"
+#include "TimerChrono.h"
 
 NeuralNetwork::NeuralNetwork(const int inputSize, const int hiddenSize, const int outputSize) : inputSize(inputSize), hiddenSize(hiddenSize), outputSize(outputSize) {
     std::mt19937 gen(std::random_device{}());
@@ -34,79 +34,66 @@ NeuralNetwork::NeuralNetwork(const int inputSize, const int hiddenSize, const in
 }
 
 void NeuralNetwork::SaveNetwork(const std::string& filePath) const {
-    std::ofstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "[ERROR] Cannot open path: " << filePath << std::endl;
+    std::ofstream out(filePath, std::ios::binary);
+    if (!out.is_open()) {
+        std::cerr << "[N.N. SAVE] Cannot open path: " << filePath << std::endl;
         return;
     }
 
-    file << "Epoch(s)\n";
-    file << currentEpoch << "\n";
-    file << "W1\n";
-    for (const auto& row : W1) {
-        for (const float w : row)
-            file << w << " ";
-        file << "\n";
-    }
-    file << "b1\n";
-    for (const float b : b1)
-        file << b << " ";
-    file << "\n";
-    file << "W2\n";
-    for (const auto& row : W2) {
-        for (const float w : row)
-            file << w << " ";
-        file << "\n";
-    }
-    file << "b2\n";
-    for (const float b : b2)
-        file << b << " ";
-    file << "\n";
+    int ce = currentEpoch;
+    out.write(reinterpret_cast<char*>(&ce), sizeof(int));
 
-    file.close();
-    std::cout << "[INFO] Neural network saved in: " << filePath << std::endl;
+    int is = inputSize, hs = hiddenSize, os = outputSize;
+    out.write(reinterpret_cast<char*>(&is), sizeof(int));
+    out.write(reinterpret_cast<char*>(&hs), sizeof(int));
+    out.write(reinterpret_cast<char*>(&os), sizeof(int));
+
+    for (int h = 0; h < hiddenSize; h++) {
+        out.write(reinterpret_cast<const char*>(W1[h].data()), static_cast<std::streamsize>(inputSize * sizeof(float)));
+    }
+    for (int o = 0; o < outputSize; o++) {
+        out.write(reinterpret_cast<const char*>(W2[o].data()), static_cast<std::streamsize>(hiddenSize * sizeof(float)));
+    }
+
+    out.write(reinterpret_cast<const char*>(b1.data()), static_cast<std::streamsize>(hiddenSize * sizeof(float)));
+    out.write(reinterpret_cast<const char*>(b2.data()), static_cast<std::streamsize>(outputSize * sizeof(float)));
+
+    out.close();
+    std::cout << "[N.N. SAVE] Neural network saved in: " << filePath << std::endl;
 }
 
 void NeuralNetwork::LoadNetwork(const std::string& filePath) {
     if (!std::filesystem::exists(filePath)) {
-        std::cerr << "[ERROR] Could not find file: " << filePath << std::endl;
+        std::cerr << "[N.N. LOAD] Could not find file: " << filePath << std::endl;
         return;
     }
 
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
+    std::ifstream in(filePath, std::ios::binary);
+    if (!in.is_open()) {
         std::cerr << "[ERROR] Cannot open path: " << filePath << std::endl;
         exit(-1);
     }
 
-    std::string tag;
-    while (file >> tag) {
-        if (tag == "Epoch(s)") {
-            file >> currentEpoch;
-        }
-        if (tag == "W1") {
-            for (auto& row : W1)
-                for (float& w : row)
-                    file >> w;
-        }
-        else if (tag == "b1") {
-            for (float& b : b1)
-                file >> b;
-        }
-        else if (tag == "W2") {
-            for (auto& row : W2)
-                for (float& w : row)
-                    file >> w;
-        }
-        else if (tag == "b2") {
-            for (float& b : b2)
-                file >> b;
-        }
+    in.read(reinterpret_cast<char*>(&currentEpoch), sizeof(int));
+
+    int is, hs, os;
+    in.read(reinterpret_cast<char*>(&is), sizeof(int));
+    in.read(reinterpret_cast<char*>(&hs), sizeof(int));
+    in.read(reinterpret_cast<char*>(&os), sizeof(int));
+
+    for (int h = 0; h < hiddenSize; h++) {
+        in.read(reinterpret_cast<char*>(W1[h].data()), static_cast<std::streamsize>(inputSize * sizeof(float)));
+    }
+    for (int o = 0; o < outputSize; o++) {
+        in.read(reinterpret_cast<char*>(W2[o].data()), static_cast<std::streamsize>(hiddenSize * sizeof(float)));
     }
 
-    file.close();
-    std::cout << "[INFO] Neural network loaded from: " << filePath << std::endl;
-    std::cout << "[INFO] Loaded neural network currently has " << currentEpoch << " epochs!" << std::endl;
+    in.read(reinterpret_cast<char*>(b1.data()), static_cast<std::streamsize>(hiddenSize * sizeof(float)));
+    in.read(reinterpret_cast<char*>(b2.data()), static_cast<std::streamsize>(outputSize * sizeof(float)));
+
+    in.close();
+    std::cout << "[N.N. LOAD] Neural network loaded from: " << filePath << std::endl;
+    std::cout << "[N.N. LOAD] Loaded neural network currently has " << currentEpoch << " epochs!" << std::endl;
 }
 
 float NeuralNetwork::sigmoid(const float x) {
@@ -230,7 +217,7 @@ void NeuralNetwork::TrainNetwork(const std::vector<std::vector<float>>& X, const
         }
 
         currentEpoch++;
-        std::cout << "Epoch: " << epoch + 1 << " / " << epochs << std::endl;
+        std::cout << "[N.N. TRAINING] Epoch(s) trained: " << epoch + 1 << " / " << epochs << " (Total epochs: " << currentEpoch << ")" << std::endl;
         SaveNetwork("neural_network_save");
     }
 }

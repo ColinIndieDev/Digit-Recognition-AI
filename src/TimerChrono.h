@@ -2,16 +2,16 @@
 #include <chrono>
 #include <iostream>
 
-struct Timer {
+struct TimerChrono {
     std::chrono::time_point<std::chrono::steady_clock> start, end;
     std::chrono::duration<float> duration{};
     std::string text;
 
-    explicit Timer(std::string text) : text(std::move(text)) {
+    explicit TimerChrono(std::string text) : text(std::move(text)) {
         start = std::chrono::steady_clock::now();
     }
 
-    ~Timer() {
+    ~TimerChrono() {
         end = std::chrono::steady_clock::now();
         duration = end - start;
         const float ms = duration.count() * 1000.0f;
