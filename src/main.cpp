@@ -15,9 +15,12 @@ std::vector<std::vector<float>> Y;
 int pixelSize = 30;
 int imageSize = 28;
 std::vector imageDrawn(imageSize, std::vector(imageSize, 0.0f));
+bool showHeatMap = false;
+std::vector<float> relevance;
 
 void HandleInput(NeuralNetwork& network);
 std::vector<std::vector<float>> CenterImage(std::vector<std::vector<float>> image);
+Color HeatColor(float v);
 
 int main() {
     for (const int label : trainLabels) {
@@ -48,7 +51,24 @@ int main() {
         for (int h = 0 ; h < imageSize; h++) {
             for (int w = 0; w < imageSize; w++) {
                 if (const float pixel = imageDrawn[h][w];
-                    pixel != 0.0f) DrawRectangle({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{pixel * 255, pixel * 255, pixel * 255, 255});
+                    pixel != 0.0f) {
+                    if (showHeatMap) DrawRectangleOutline({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{pixel * 255, pixel * 255, pixel * 255, 150});
+                    else DrawRectangle({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{pixel * 255, pixel * 255, pixel * 255, 255});
+                }
+            }
+        }
+        if (showHeatMap && !relevance.empty()) {
+            for (int h = 0; h < imageSize; h++) {
+                for (int w = 0; w < imageSize; w++) {
+                    const float value = relevance[h * imageSize + w];
+                    Color c = {
+                        255,
+                        255 * (1.0f - value),
+                        0,
+                        150
+                    };
+                    DrawRectangle({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, c);
+                }
             }
         }
 
@@ -73,15 +93,13 @@ void HandleInput(NeuralNetwork& network) {
                 imageDrawn[h][w] = 0.0f;
             }
         }
+        relevance.clear();
     }
     if (IsMouseDown(MOUSE_BUTTON_LEFT)) {
         glm::vec2 mousePos = GetMousePosition();
         for (int h = 0; h < imageSize; h++) {
             for (int w = 0; w < imageSize; w++) {
                 Rectangle pixel({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, WHITE);
-                //if (CheckCollisionVec2Rect(mousePos, pixel) && imageDrawn[h][w] < 1.0f) {
-                //    imageDrawn[h][w] = 1.0f;
-                //}
                 if (Circle pixelCircle(mousePos, 20.f, WHITE);
                     CheckCollisionCircleRect(pixelCircle, pixel) && imageDrawn[h][w] < 1.0f) {
                     imageDrawn[h][w] = 1.0f;
@@ -90,13 +108,23 @@ void HandleInput(NeuralNetwork& network) {
         }
     }
     if (IsKeyPressedOnce(KEY_SPACE)) {
-        std::vector<float> imageDrawnVec;
+        auto centeredImage = CenterImage(imageDrawn);
+        std::vector<float> input;
+        input.reserve(imageSize * imageSize);
         for (int h = 0; h < imageSize; h++) {
             for (int w = 0; w < imageSize; w++) {
-                imageDrawnVec.push_back(CenterImage(imageDrawn)[h][w]);
+                input.push_back(centeredImage[h][w]);
             }
         }
-        std::vector<float> outputs = network.FeedForward(imageDrawnVec);
+        auto outputs = network.FeedForward(input);
+
+        int predicted = static_cast<int>(std::distance(outputs.begin(), std::max_element(outputs.begin(), outputs.end())));
+        relevance = network.RelevanceMap(input, predicted);
+        float maxVal = *std::max_element(relevance.begin(), relevance.end());
+        float minVal = *std::min_element(relevance.begin(), relevance.end());
+        for (auto& v : relevance) {
+            v = (v - minVal) / (maxVal - minVal);
+        }
 
         std::cout << "------------------------------------------------------\n";
         std::cout << "Result" << std::endl;
@@ -112,6 +140,12 @@ void HandleInput(NeuralNetwork& network) {
         std::cout << "------------------------------------------------------\n";
         std::cout << "The number shown is: " << index << " | Probability: " << outputs[index] * 100 << "%" << std::endl;
         std::cout << "------------------------------------------------------\n";
+    }
+    if (IsKeyDown(GLFW_KEY_LEFT_SHIFT)) {
+        showHeatMap = true;
+    }
+    else {
+        showHeatMap = false;
     }
     if (IsKeyPressedOnce(KEY_T)) {
         auto timer = TimerChrono("Testing network took");
@@ -172,4 +206,14 @@ std::vector<std::vector<float>> CenterImage(std::vector<std::vector<float>> imag
 
     image = std::move(temp);
     return image;
+}
+
+Color HeatColor(float v) {
+    v = std::clamp(v, 0.0f, 1.0f);
+
+    const float r = std::min(std::max(4 * (v - 0.75f), 0.0f), 1.0f);
+    const float g = std::min(std::max(4 * (v - 0.25f), 0.0f), 1.0f);
+    const float b = std::min(std::max(4 * (0.25f - v), 0.0f), 1.0f);
+
+    return Color(static_cast<uint8_t>(r * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(b * 255), 150);
 }

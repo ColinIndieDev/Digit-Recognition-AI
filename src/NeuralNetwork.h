@@ -8,6 +8,8 @@ public:
 
     void LoadNetwork(const std::string& filePath);
     void SaveNetwork(const std::string& filePath) const;
+    [[nodiscard]] std::vector<std::vector<float>> ActivationHeatMap(const std::vector<float>& input) const;
+    [[nodiscard]] std::vector<float> RelevanceMap(const std::vector<float>& input, int outputIndex) const;
     [[nodiscard]] std::vector<float> FeedForward(const std::vector<float>& input) const;
     void TrainNetwork(const std::vector<std::vector<float>>& X, const std::vector<std::vector<float>>& Y, float learningRate, int epochs);
 private:

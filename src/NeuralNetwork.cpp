@@ -4,6 +4,7 @@
 #include <ostream>
 #include <fstream>
 #include <filesystem>
+#include <float.h>
 #include <random>
 #include "TimerChrono.h"
 
@@ -101,6 +102,81 @@ float NeuralNetwork::sigmoid(const float x) {
 }
 float NeuralNetwork::sigmoidDerivative(const float x) {
     return x * (1.0f - x);
+}
+
+std::vector<std::vector<float>> NeuralNetwork::ActivationHeatMap(const std::vector<float>& input) const {
+    std::vector<float> hidden(hiddenSize);
+
+    for (int h = 0; h < hiddenSize; h++) {
+        float sum = b1[h];
+        for (int i = 0; i < inputSize; i++) {
+            sum += W1[h][i] * input[i];
+        }
+        hidden[h] = sigmoid(sum);
+    }
+
+    std::vector heat(28, std::vector(28, 0.0f));
+    for (int h = 0; h < hiddenSize; h++) {
+        for (int i = 0; i < inputSize; i++) {
+            heat[i / 28][i % 28] += std::abs(W1[h][i]) * hidden[h];
+        }
+    }
+
+    float minValue;
+    float maxValue;
+    for (auto& row : heat) {
+        for (float v : row) {
+            minValue = std::min(minValue, v);
+            maxValue = std::max(maxValue, v);
+        }
+    }
+    float range = maxValue - minValue;
+    if (range < 1e-6f) range = 1.0f;
+    for (auto& row : heat) {
+        for (float& v : row) {
+            v = (v - minValue) / range;
+        }
+    }
+    return heat;
+}
+
+std::vector<float> NeuralNetwork::RelevanceMap(const std::vector<float>& input, const int outputIndex) const {
+    std::vector<float> hidden(hiddenSize);
+    std::vector<float> output(outputSize);
+
+    for (int h = 0; h < hiddenSize; h++) {
+        float sum = b1[h];
+        for (int i = 0; i < inputSize; i++)
+            sum += W1[h][i] * input[i];
+        hidden[h] = sigmoid(sum);
+    }
+
+    for (int o = 0; o < outputSize; o++) {
+        float sum = b2[o];
+        for (int h = 0; h < hiddenSize; h++)
+            sum += W2[o][h] * hidden[h];
+        output[o] = sigmoid(sum);
+    }
+
+    std::vector deltaOut(outputSize, 0.0f);
+    deltaOut[outputIndex] = sigmoidDerivative(output[outputIndex]);
+
+    std::vector deltaHid(hiddenSize, 0.0f);
+    for (int h = 0; h < hiddenSize; h++) {
+        float sum = 0.0f;
+        for (int o = 0; o < outputSize; o++)
+            sum += deltaOut[o] * W2[o][h];
+        deltaHid[h] = sum * sigmoidDerivative(hidden[h]);
+    }
+
+    std::vector relevance(inputSize, 0.0f);
+    for (int h = 0; h < hiddenSize; h++) {
+        for (int i = 0; i < inputSize; i++) {
+            relevance[i] += deltaHid[h] * W1[h][i];
+        }
+    }
+
+    return relevance;
 }
 
 std::vector<float> NeuralNetwork::FeedForward(const std::vector<float>& input) const {
