@@ -20,6 +20,8 @@ std::vector<float> relevance;
 
 void HandleInput(NeuralNetwork& network);
 std::vector<std::vector<float>> CenterImage(std::vector<std::vector<float>> image);
+std::vector<std::vector<float>> SmoothImage(const std::vector<std::vector<float>>& image);
+std::vector<std::vector<float>> GaussianBlur(const std::vector<std::vector<float>>& image);
 Color HeatColor(float v);
 
 int main() {
@@ -35,8 +37,8 @@ int main() {
         network.LoadNetwork("neural_network_save");
     }
     {
-        //auto timer = TimerChrono("Training network took");
-        //network.TrainNetwork(trainImages, Y, 0.01, 100);
+        auto timer = TimerChrono("Training network took");
+        network.TrainNetwork(trainImages, Y, 0.1, 100);
     }
 
     InitWindow(280 * 3, 280 * 3, "Neural Network");
@@ -46,17 +48,15 @@ int main() {
 
         HandleInput(network);
 
-        ClearBackground(BLACK);
+        ClearBackground(showHeatMap && !relevance.empty() ? Color(150, 150, 150, 255) : BLACK);
         BeginDrawing(SHAPE_2D, false);
-        for (int h = 0 ; h < imageSize; h++) {
-            for (int w = 0; w < imageSize; w++) {
-                if (const float pixel = imageDrawn[h][w];
-                    pixel != 0.0f) {
-                    if (showHeatMap) DrawRectangleOutline({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{pixel * 255, pixel * 255, pixel * 255, 150});
-                    else DrawRectangle({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{pixel * 255, pixel * 255, pixel * 255, 255});
-                }
-            }
+        for (int h = 0; h < imageSize; h++) {
+            DrawLine({0, h * 30}, {GetScreenWidth(), h * 30}, Color(255, 255, 255, 50));
         }
+        for (int w = 0; w < imageSize; w++) {
+            DrawLine({w * 30, 0}, {w * 30, GetScreenHeight()}, Color(255, 255, 255, 50));
+        }
+
         if (showHeatMap && !relevance.empty()) {
             for (int h = 0; h < imageSize; h++) {
                 for (int w = 0; w < imageSize; w++) {
@@ -69,6 +69,15 @@ int main() {
                     };
                     DrawRectangle({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, c);
                 }
+            }
+        }
+        for (int h = 0 ; h < imageSize; h++) {
+            for (int w = 0; w < imageSize; w++) {
+                if (const float pixel = imageDrawn[h][w];
+                    pixel != 0.0f) {
+                    if (showHeatMap) DrawRectangleOutline({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{255, 255, 255, 150});
+                    else DrawRectangle({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, Color{255, 255, 255, 255});
+                    }
             }
         }
 
@@ -100,7 +109,7 @@ void HandleInput(NeuralNetwork& network) {
         for (int h = 0; h < imageSize; h++) {
             for (int w = 0; w < imageSize; w++) {
                 Rectangle pixel({w * pixelSize, h * pixelSize}, {pixelSize, pixelSize}, WHITE);
-                if (Circle pixelCircle(mousePos, 20.f, WHITE);
+                if (Circle pixelCircle(mousePos, 30.f, WHITE);
                     CheckCollisionCircleRect(pixelCircle, pixel) && imageDrawn[h][w] < 1.0f) {
                     imageDrawn[h][w] = 1.0f;
                 }
@@ -109,11 +118,13 @@ void HandleInput(NeuralNetwork& network) {
     }
     if (IsKeyPressedOnce(KEY_SPACE)) {
         auto centeredImage = CenterImage(imageDrawn);
+        auto blurred = GaussianBlur(centeredImage);
         std::vector<float> input;
+        std::vector<float> smoothedInput;
         input.reserve(imageSize * imageSize);
         for (int h = 0; h < imageSize; h++) {
             for (int w = 0; w < imageSize; w++) {
-                input.push_back(centeredImage[h][w]);
+                input.push_back(blurred[h][w]);
             }
         }
         auto outputs = network.FeedForward(input);
@@ -167,9 +178,67 @@ void HandleInput(NeuralNetwork& network) {
         const double accuracy = 100.0 * correct / total;
         std::cout << "[N.N. TEST] Test accuracy: " << accuracy << "% (" << correct << "/" << total << ")" << std::endl;
     }
+    if (IsKeyPressedOnce(KEY_W)) {
+        std::cout << "[N.N. DYNAMIC TRAINER] Solution is wrong?" << std::endl;
+        std::cout << "[N.N. DYNAMIC TRAINER] Enter the number between 0 and 9: " << std::endl;
+        int label = 0;
+        std::cin >> label;
+        if (label < 0 || label > 9) {
+            std::cerr << "[N.N. TRAINER] Only numbers between 0 and 9 are allowed!" << std::endl;
+            return;
+        }
+
+        std::cout << "[N.N. DYNAMIC TRAINER] Set the learn rate (recommended 0.01 or 0.1): " << std::endl;
+        float rate = 0.0f;
+        std::cin >> rate;
+        if (rate < 0.0f) {
+            std::cerr << "[N.N. TRAINER] Only positive values are allowed!" << std::endl;
+            return;
+        }
+
+        std::cout << "[N.N. DYNAMIC TRAINER] Set epochs for training: " << std::endl;
+        int epochs = 0;
+        std::cin >> epochs;
+        if (epochs < 0) {
+            std::cerr << "[N.N. TRAINER] Only positive values are allowed!" << std::endl;
+            return;
+        }
+
+        std::vector y(10, 0.0f);
+        y[label] = 1.0f;
+        std::vector<std::vector<float>> m_Y = {y};
+        auto centeredImage = CenterImage(imageDrawn);
+        auto blurred = GaussianBlur(centeredImage);
+        std::vector<float> input;
+        input.reserve(imageSize * imageSize);
+        for (int h = 0; h < imageSize; h++) {
+            for (int w = 0; w < imageSize; w++) {
+                input.push_back(blurred [h][w]);
+            }
+        }
+        std::vector<std::vector<float>> m_X = {input};
+
+        network.TrainNetwork(m_X, m_Y, rate, epochs);
+    }
     if (IsKeyPressedOnce(KEY_I)) {
+        std::cout << "[N.N. DYNAMIC TRAINER] Set the learn rate (recommended 0.01 or 0.1): " << std::endl;
+        float rate = 0.0f;
+        std::cin >> rate;
+        if (rate < 0.0f) {
+            std::cerr << "[N.N. TRAINER] Only positive values are allowed!" << std::endl;
+            return;
+        }
+
+        std::cout << "[N.N. DYNAMIC TRAINER] Set epochs for training: " << std::endl;
+        int epochs = 0;
+        std::cin >> epochs;
+        if (epochs < 0) {
+            std::cerr << "[N.N. TRAINER] Only positive values are allowed!" << std::endl;
+            return;
+        }
+
         auto timer = TimerChrono("Training network took");
-        network.TrainNetwork(trainImages, Y, 0.1, 1);
+        network.TrainNetwork(trainImages, Y, rate, epochs);
     }
     if (IsKeyPressedOnce(KEY_ESCAPE)) glfwSetWindowShouldClose(window, true);
 }
@@ -208,6 +277,30 @@ std::vector<std::vector<float>> CenterImage(std::vector<std::vector<float>> imag
     return image;
 }
 
+std::vector<std::vector<float>> GaussianBlur(const std::vector<std::vector<float>>& image) {
+    const int size = static_cast<int>(image.size());
+    std::vector out (size, std::vector(size, 0.0f));
+
+    for (int h = 1; h < size - 1; h++) {
+        for (int w = 1; w < size - 1; w++) {
+            float sum = 0.0f;
+
+            for (int ky = -1; ky <= 1; ky++) {
+                for (int kx = -1; kx <= 1; kx++) {
+                    constexpr float kernel[3][3] {
+                        {1, 2, 1},
+                        {2, 4, 2},
+                        {1, 2, 1}
+                    };
+                    sum += image[h + ky][w + kx] * kernel[ky + 1][kx + 1];
+                }
+            }
+            out[h][w] = sum / 16.0f;
+        }
+    }
+    return out;
+}
+
 Color HeatColor(float v) {
     v = std::clamp(v, 0.0f, 1.0f);
 
@@ -216,4 +309,18 @@ Color HeatColor(float v) {
     const float b = std::min(std::max(4 * (0.25f - v), 0.0f), 1.0f);
 
     return Color(static_cast<uint8_t>(r * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(b * 255), 150);
+}
+
+std::vector<std::vector<float>> SmoothImage(const std::vector<std::vector<float>>& image) {
+    auto out = image;
+    for (int h = 1; h < imageSize - 1; h++) {
+        for (int w = 1; w < imageSize - 1; w++) {
+            out[h][w] = (image[h][w]
+                + image[h -1][w]
+                + image[h + 1][w]
+                + image[h][w - 1]
+                + image[h][w + 1]) / 0.5f;
+        }
+    }
+    return out;
 }
