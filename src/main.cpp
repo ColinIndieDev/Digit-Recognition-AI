@@ -1,5 +1,6 @@
 #include "../CPLibrary/CPLibrary.h"
 #include "NeuralNetwork.h"
+#include "CustomLoader.h"
 #include "MNISTloader.h"
 #include "TimerChrono.h"
 
@@ -10,6 +11,7 @@ const auto trainImages = MNISTloader::LoadImages("../data/train-images.idx3-ubyt
 const auto trainLabels = MNISTloader::LoadLabels("../data/train-labels.idx1-ubyte");
 const auto testImages = MNISTloader::LoadImages("../data/t10k-images.idx3-ubyte");
 const auto testLabels = MNISTloader::LoadLabels("../data/t10k-labels.idx1-ubyte");
+const auto customTrainImagesLabels = CustomLoader::LoadImages("custom-train-images-and-labels");
 std::vector<std::vector<float>> Y;
 
 int pixelSize = 30;
@@ -39,6 +41,19 @@ int main() {
     {
         auto timer = TimerChrono("Training network took");
         network.TrainNetwork(trainImages, Y, 0.1, 100);
+        /*
+        std::vector<std::vector<float>> m_X;
+        std::vector<std::vector<float>> m_Y;
+
+        for (auto& [image, label] : customTrainImagesLabels) {
+            m_X.push_back(image);
+            std::vector y(10, 0.0f);
+            y[label] = 1.0f;
+            m_Y.push_back(y);
+        }
+
+        network.TrainNetwork(m_X, m_Y, 0.1f, 10);
+        */
     }
 
     InitWindow(280 * 3, 280 * 3, "Neural Network");
@@ -184,7 +199,7 @@ void HandleInput(NeuralNetwork& network) {
         int label = 0;
         std::cin >> label;
         if (label < 0 || label > 9) {
-            std::cerr << "[N.N. TRAINER] Only numbers between 0 and 9 are allowed!" << std::endl;
+            std::cerr << "[N.N. DYNAMIC TRAINER] Only numbers between 0 and 9 are allowed!" << std::endl;
             return;
         }
 
@@ -192,7 +207,7 @@ void HandleInput(NeuralNetwork& network) {
         float rate = 0.0f;
         std::cin >> rate;
         if (rate < 0.0f) {
-            std::cerr << "[N.N. TRAINER] Only positive values are allowed!" << std::endl;
+            std::cerr << "[N.N. DYNAMIC TRAINER] Only positive values are allowed!" << std::endl;
             return;
         }
 
@@ -200,9 +215,11 @@ void HandleInput(NeuralNetwork& network) {
         int epochs = 0;
         std::cin >> epochs;
         if (epochs < 0) {
-            std::cerr << "[N.N. TRAINER] Only positive values are allowed!" << std::endl;
+            std::cerr << "[N.N. DYNAMIC TRAINER] Only positive values are allowed!" << std::endl;
             return;
         }
+
+        CustomLoader::SaveImage(imageDrawn, label, "custom-train-images-and-labels", imageSize);
 
         std::vector y(10, 0.0f);
         y[label] = 1.0f;

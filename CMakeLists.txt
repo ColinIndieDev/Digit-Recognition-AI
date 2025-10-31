@@ -82,6 +82,8 @@ add_executable(AI src/main.cpp
         CPLibrary/Audio.cpp
         CPLibrary/Audio.h
         CPLibrary/Path.h
+        src/CustomLoader.cpp
+        src/CustomLoader.h
 )
 
 # Include directories
