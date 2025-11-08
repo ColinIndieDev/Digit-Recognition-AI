@@ -7,10 +7,10 @@
 using namespace CPL;
 PRIORITIZE_GPU_BY_VENDOR
 
-const auto trainImages = MNISTloader::LoadImages("../data/train-images.idx3-ubyte");
-const auto trainLabels = MNISTloader::LoadLabels("../data/train-labels.idx1-ubyte");
-const auto testImages = MNISTloader::LoadImages("../data/t10k-images.idx3-ubyte");
-const auto testLabels = MNISTloader::LoadLabels("../data/t10k-labels.idx1-ubyte");
+const auto trainImages = MNISTloader::LoadImages("data/train-images.idx3-ubyte");
+const auto trainLabels = MNISTloader::LoadLabels("data/train-labels.idx1-ubyte");
+const auto testImages = MNISTloader::LoadImages("data/t10k-images.idx3-ubyte");
+const auto testLabels = MNISTloader::LoadLabels("data/t10k-labels.idx1-ubyte");
 const auto customTrainImagesLabels = CustomLoader::LoadImages("custom-train-images-and-labels");
 std::vector<std::vector<float>> Y;
 
@@ -39,8 +39,8 @@ int main() {
         network.LoadNetwork("neural_network_save");
     }
     {
-        auto timer = TimerChrono("Training network took");
-        network.TrainNetwork(trainImages, Y, 0.1, 100);
+        // auto timer = TimerChrono("Training network took");
+        // network.TrainNetwork(trainImages, Y, 0.1, 100);
         /*
         std::vector<std::vector<float>> m_X;
         std::vector<std::vector<float>> m_Y;

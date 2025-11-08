@@ -9,7 +9,6 @@
 #include "shapes2D/Texture2D.h"
 #include "timers/TimerManager.h"
 #include "stb_image.h"
-#include "Path.h"
 
 namespace CPL {
     Shader shapeShader;
@@ -96,7 +95,7 @@ namespace CPL {
         }
 
         InitShaders();
-        Text::Init(Path::GetAssetPath("assets/fonts/default.ttf"), "defaultFont", NEAREST);
+        Text::Init("assets/fonts/default.ttf", "defaultFont", NEAREST);
         AudioManager::Init();
 
         // ----- For the font & 2D textures ----- //
@@ -126,9 +125,9 @@ namespace CPL {
     }
 
     void InitShaders() {
-        shapeShader = Shader(Path::GetAssetPath("CPLibrary/shaders/shader.vert").c_str(), Path::GetAssetPath("CPLibrary/shaders/shader.frag").c_str());
-        textShader = Shader(Path::GetAssetPath("CPLibrary/shaders/text.vert").c_str(), Path::GetAssetPath("CPLibrary/shaders/text.frag").c_str());
-        textureShader = Shader(Path::GetAssetPath("CPLibrary/shaders/texture.vert").c_str(), Path::GetAssetPath("CPLibrary/shaders/texture.frag").c_str());
+        shapeShader = Shader("CPLibrary/shaders/shader.vert", "CPLibrary/shaders/shader.frag");
+        textShader = Shader("CPLibrary/shaders/text.vert", "CPLibrary/shaders/text.frag");
+        textureShader = Shader("CPLibrary/shaders/texture.vert", "CPLibrary/shaders/texture.frag");
     }
 
     void BeginDrawing(const DrawModes& mode, const bool mode2D) {
